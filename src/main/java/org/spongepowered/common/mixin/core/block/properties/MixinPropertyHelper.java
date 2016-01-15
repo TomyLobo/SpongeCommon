@@ -26,44 +26,24 @@ package org.spongepowered.common.mixin.core.block.properties;
 
 import net.minecraft.block.properties.PropertyHelper;
 import org.spongepowered.api.block.trait.BlockTrait;
-import org.spongepowered.api.util.Functional;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
-import org.spongepowered.asm.mixin.Intrinsic;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.common.interfaces.block.IMixinPropertyHolder;
+import org.spongepowered.common.registry.type.BlockTypeRegistryModule;
 
-import java.util.function.Predicate;
-
+/**
+ * This is retained solely for simplification not having to perform any
+ * lookups to the {@link BlockTypeRegistryModule#getIdFor(BlockTrait)}.
+ *
+ * @param <T>
+ */
 @Mixin(value = PropertyHelper.class)
-@Implements(@Interface(iface = BlockTrait.class, prefix = "trait$"))
 public abstract class MixinPropertyHelper<T extends Comparable<T>> implements BlockTrait<T>, IMixinPropertyHolder {
 
-    protected String propertyName;
     protected String idString;
-
-    @Shadow private String name;
-    @Shadow public abstract Class<T> shadow$getValueClass();
 
     @Override
     public String getId() {
         return this.idString;
-    }
-
-    @Override
-    public String getName() {
-        return this.name;
-    }
-
-    @Intrinsic
-    public Class<T> trait$getValueClass() {
-        return this.shadow$getValueClass();
-    }
-
-    @Override
-    public Predicate<T> getPredicate() {
-        return Functional.predicateIn(getPossibleValues());
     }
 
     @Override

@@ -25,9 +25,13 @@
 package org.spongepowered.common.registry.type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import net.minecraft.block.properties.IProperty;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.block.trait.BlockTrait;
@@ -55,6 +59,12 @@ public class BlockTypeRegistryModule implements SpongeAdditionalCatalogRegistryM
 
     @RegisterCatalog(BlockTypes.class)
     private final Map<String, BlockType> blockTypeMappings = Maps.newHashMap();
+
+    private final BiMap<String, BlockTrait<?>> blockTraitMap = HashBiMap.create();
+
+    public String getIdFor(IProperty<?> blockTrait) {
+        return checkNotNull(this.blockTraitMap.inverse().get((BlockTrait<?>) blockTrait), "BlockTrait doen't have a registered id!");
+    }
 
     @Override
     public Map<String, BlockType> provideCatalogMap() {
@@ -95,10 +105,19 @@ public class BlockTypeRegistryModule implements SpongeAdditionalCatalogRegistryM
         registerBlockTrait(id, blockType);
     }
 
+    private void registerTrait(String id, BlockTrait<?> blockTrait) {
+        checkState(!this.blockTraitMap.containsKey(id), "Already registered this block trait");
+        this.blockTraitMap.put(checkNotNull(id, "id").toLowerCase(), checkNotNull(blockTrait, "blockTrait"));
+    }
+
     private void registerBlockTrait(String id, BlockType block) {
         for (Map.Entry<BlockTrait<?>, ?> mapEntry : block.getDefaultState().getTraitMap().entrySet()) {
             BlockTrait<?> property = mapEntry.getKey();
-            ((IMixinPropertyHolder) property).setId(id.toLowerCase() + "_" + property.getName().toLowerCase());
+            final String propertyId = id.toLowerCase() + "_" + property.getName().toLowerCase();
+            registerTrait(propertyId, property);
+            if (property instanceof IMixinPropertyHolder) {
+                ((IMixinPropertyHolder) property).setId(propertyId);
+            }
             if (property instanceof EnumTrait) {
                 EnumTraitRegistryModule.getInstance().registerBlock(id, block, (EnumTrait<?>) property);
             } else if (property instanceof IntegerTrait) {
